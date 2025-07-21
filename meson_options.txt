@@ -1,0 +1,4 @@
+option('enable_test', type: 'boolean', value: false, description: 'Enable testing')
+option('logging_colors', type: 'boolean', value: false, description: 'Enable colored output for logging')
+option('bic_communication', type: 'boolean', value: false, description: 'Enable bic communication (only supported on ARM32).')
+option('enable_cli', type: 'boolean', value: false, description: 'Enable internal CLI')

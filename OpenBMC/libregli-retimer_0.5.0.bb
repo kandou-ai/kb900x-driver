@@ -15,9 +15,9 @@ SRCREV = "${AUTOREV}"
 
 inherit meson pkgconfig
 
-DEPENDS += "libobmc-i2c"
+DEPENDS += ""
 
-RDEPENDS:${PN} += "libobmc-i2c"
+RDEPENDS:${PN} += ""
 
 python __anonymous() {
     bic_comm = d.getVar('KB900X_BIC_COMMUNICATION')

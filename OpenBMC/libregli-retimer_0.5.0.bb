@@ -7,10 +7,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 # Set default value (can be overridden in a .bbappend or local.conf)
 KB900X_BIC_COMMUNICATION ??= "False"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR="${S}"
-
-SRC_URI = "git://github.com/kandou-ai/kb900x-driver.git;branch=main"
+S = "${WORKDIR}/git"
+SRC_URI = "git://github.com/kandou-ai/kb900x-driver.git;branch=main;protocol=https"
 SRCREV = "${AUTOREV}"
 
 inherit meson pkgconfig

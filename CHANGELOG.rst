@@ -1,6 +1,17 @@
 KB900x SMBus Library Changelog
 ==============================
 
+v0.5.1
+------
+
+**Fixes**
+
+- Fix EEPROM read/write functions to use uint32_t for address
+- Fix logging format when parsing region table
+- Remove duplicate read of the region table of the EEPROM
+- Fix firmware trace size
+- Correct interpretation of kb900x_get_vendor_id return code
+
 v0.5.0
 ------
 

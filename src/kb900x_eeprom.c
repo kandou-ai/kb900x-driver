@@ -21,7 +21,7 @@
 #include <time.h>
 
 // FIXME too coupled with firmware
-int kb900x_eeprom_write(const kb900x_config_t *config, const uint16_t addr, const uint8_t *payload,
+int kb900x_eeprom_write(const kb900x_config_t *config, const uint32_t addr, const uint8_t *payload,
                         const size_t payload_size, const kb900x_eeprom_config_t *eeprom_config)
 {
     if (payload == NULL || config == NULL || eeprom_config == NULL) {
@@ -117,7 +117,7 @@ int kb900x_eeprom_write(const kb900x_config_t *config, const uint16_t addr, cons
     return KB900X_E_OK;
 }
 
-int kb900x_eeprom_read(const kb900x_config_t *config, const uint16_t addr, const size_t length,
+int kb900x_eeprom_read(const kb900x_config_t *config, const uint32_t addr, const size_t length,
                        uint8_t *result, const kb900x_eeprom_config_t *eeprom_config)
 {
     if (result == NULL || config == NULL || eeprom_config == NULL) {

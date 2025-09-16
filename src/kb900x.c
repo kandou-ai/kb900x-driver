@@ -569,7 +569,7 @@ int kb900x_get_vendor_id(const kb900x_config_t *config, uint32_t *vendor_id)
     int ret = 0;
     uint32_t value = 0;
     ret = io.read(config, KB900X_ADDR_VID, KB900X_SMBUS_REGISTER_ADDR_SIZE, &value);
-    CHECK_SUCCESS_MSG(ret, "Unable to read vendor id, err code : %d - %s", errno, strerror(errno));
+    CHECK_SUCCESS_MSG(ret, "Unable to read vendor id, err code : %d - %s", ret, strerror(ret));
     *vendor_id = ((value >> 16) & 0xFF) + (((value >> 24) & 0xFF) << 8);
     return KB900X_E_OK;
 }
@@ -858,7 +858,6 @@ int kb900x_get_config_region(const kb900x_config_t *config,
     int ret = kb900x_eeprom_read(config, region_table_addr, region_table_len, region_table,
                                  eeprom_config);
     CHECK_SUCCESS_MSG(ret, "Failed to read region table");
-
     // Find the configuration region
     const uint8_t region_table_entry_len = 48; // Each entry is 48 bytes
     *start_addr = 0;
@@ -871,8 +870,8 @@ int kb900x_get_config_region(const kb900x_config_t *config,
                               (region_table[i + 6] << 16) | (region_table[i + 7] << 24);
                 *length = region_table[i + 8] | (region_table[i + 9] << 8) |
                           (region_table[i + 10] << 16) | (region_table[i + 11] << 24);
-                KANDOU_DEBUG("Found configuration region at 0x%x with length 0x%x", start_addr,
-                             length);
+                KANDOU_DEBUG("Found configuration region at 0x%08X with length 0x%08X", *start_addr,
+                             *length);
                 break;
             }
         }
@@ -898,14 +897,6 @@ int kb900x_configure_firmware(const kb900x_config_t *config,
     int ret = kb900x_i2c_master_init(config, eeprom_config->slave_addr);
     CHECK_SUCCESS_MSG(ret, "Failed to initialize I2C master");
 
-    // Parse region table to deduce config area start address and length
-    const uint16_t region_table_addr = 0x100;
-    const size_t region_table_len = 0x100;
-    uint8_t region_table[region_table_len];
-    ret = kb900x_eeprom_read(config, region_table_addr, region_table_len, region_table,
-                             eeprom_config);
-    CHECK_SUCCESS_MSG(ret, "Failed to read region table");
-
     // Find the configuration region
     uint32_t config_region_start = 0;
     uint32_t config_region_length = 0;
@@ -923,7 +914,7 @@ int kb900x_configure_firmware(const kb900x_config_t *config,
     // Erase old configuration region
     uint8_t reset_payload[config_region_length];
     for (uint32_t i = 0; i < config_region_length; i++) {
-        reset_payload[i] = 0xff;
+        reset_payload[i] = 0xFF;
     }
     ret = kb900x_eeprom_write(config, config_region_start, reset_payload, config_region_length,
                               eeprom_config);

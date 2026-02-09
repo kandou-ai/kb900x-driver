@@ -164,6 +164,7 @@ typedef enum {
     KB900X_COMM_SMBUS = 0,
     KB900X_COMM_TWI = 1,
     KB900X_COMM_BIC = 2,
+    KB900X_COMM_SHORT_SMBUS = 3
 } kb900x_communication_mode_t;
 // NOTE: these comments are used to denote what must be included in the headerfile for the CFFI
 //! CFFI END
@@ -762,6 +763,16 @@ int kb900x_write_register(const kb900x_config_t *config, const uint32_t address,
  * \return 0 if no error, else the error code
  */
 int kb900x_read_register(const kb900x_config_t *config, const uint32_t address, uint32_t *result);
+
+/** \brief Read the SMBUS global parameter register 1.
+ *
+ * \param[in] config the config context, cannot be NULL
+ * \param[out] result pointer where to store the value read, cannot be NULL
+ *
+ * \return 0 if no error, else the error code
+ */
+int kb900x_read_global_param_register_1(const kb900x_config_t *config, uint32_t *result);
+
 // NOTE: these comments are used to denote what must be included in the headerfile for the CFFI
 //! CFFI END
 
@@ -1074,7 +1085,5 @@ int kb900x_log_rpcs_dbg_counter(const kb900x_rpcs_debug_counter_t *data, const c
  * \return 0 if no error, else the error code
  */
 int kb900x_error_dump(const kb900x_config_t *config, const char *filename);
-
-//! CFFI END
 
 #endif // _KB_SMBUS_H

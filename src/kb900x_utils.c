@@ -25,8 +25,9 @@ void wait_ms(int milliseconds)
     // Convert milliseconds to clock ticks
     const int nb_ms_in_sec = 1000;
     clock_t wait_time = (milliseconds * CLOCKS_PER_SEC) / nb_ms_in_sec;
-    while (clock() < start_time + wait_time)
+    while (clock() < start_time + wait_time) {
         ; // Busy wait
+    }
 }
 
 uint8_t cal_crc8(uint8_t *data, size_t len)

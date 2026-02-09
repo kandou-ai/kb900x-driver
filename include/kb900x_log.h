@@ -22,6 +22,7 @@
 
 #define KB900X_LOG_VERSION "0.1.0"
 
+//! CFFI
 typedef enum {
     KB900X_LOG_DEBUG = 0,
     KB900X_LOG_INFO = 1,
@@ -34,7 +35,9 @@ typedef enum {
 void kandou_log_msg(KB900X_LOG_LEVEL level, const char *file, int line, const char *fmt, ...);
 void kandou_log_set_level(int level);
 void kandou_log_set_output_file(FILE *fp);
-void kandou_log_set_quiet(int enable);
+void kandou_log_set_quiet(int quiet);
+//! CFFI END
+
 // void kandou_log_set_udata(void *udata);
 // void kandou_log_set_lock(logLockFn fn);
 // void kandou_log_set_callback(void (*ptr)());

@@ -90,7 +90,13 @@ if clang_tidy.found()
         'clang-tidy',
         input: [lib_sources_with_path, inc_sources_with_path],
         output: 'clang-tidy-output.txt',  # You can change the output file name
-        command: [clang_tidy, '@INPUT@', '--fix-errors', '--extra-arg=-std=c17'],
+        command: [
+            clang_tidy,
+            '@INPUT@',
+            '-p=@BUILD_ROOT@',
+            '--extra-arg=-std=c17',
+            # '--fix-errors',
+            ],
         build_by_default: false,
     )
 endif

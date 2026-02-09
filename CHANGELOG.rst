@@ -1,6 +1,20 @@
 KB900x SMBus Library Changelog
 ==============================
 
+v0.5.3
+------
+
+**Fixes**
+
+- Add timeout to TWI byteshitfing fix loop to avoid infinite loop if communication is broken.
+
+v0.5.2
+------
+
+**New Features / Improvements**
+
+- Add ``get_device_id`` to ``kb_i2c_linux``
+
 v0.5.1
 ------
 

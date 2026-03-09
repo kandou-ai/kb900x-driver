@@ -50,6 +50,18 @@ if bic_communication
     add_project_link_arguments('-Wl,--allow-shlib-undefined,-dynamic-linker=/lib/ld-linux-armhf.so.3', language: 'c')
 endif
 
+product = get_option('product')
+defs = {
+  'KB9003': '-DKB9003',
+  'KB9002': '-DKB9002'
+}
+if defs.has_key(product)
+    add_project_arguments(defs[product], language: 'c')
+    add_project_arguments(defs[product], language: 'cpp')
+else
+    error('Unsupported product: ' + product)
+endif
+
 # Add the subdirectory for the headers
 subdir('include')
 

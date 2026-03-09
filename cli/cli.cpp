@@ -367,7 +367,7 @@ bool tx_presets(const kb900x_config_t &config, const std::string filename)
  */
 bool phy_info(const kb900x_config_t &config, const std::string filename)
 {
-    kb9003_phy_info_t phy_info;
+    kb900x_phy_info_t phy_info;
     int ret = kb900x_get_phy_info(&config, &phy_info);
     if (ret != KB900X_E_OK) {
         std::cout << "Failed to read PHY info: " << kb900x_strerror(ret) << std::endl;

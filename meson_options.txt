@@ -1,4 +1,5 @@
 option('enable_test', type: 'boolean', value: false, description: 'Enable testing')
 option('logging_colors', type: 'boolean', value: false, description: 'Enable colored output for logging')
 option('bic_communication', type: 'boolean', value: false, description: 'Enable bic communication (only supported on ARM32).')
+option('product', type: 'string', value: 'KB9003', description: 'Specify the product (KB9002 or KB9003)')
 option('enable_cli', type: 'boolean', value: false, description: 'Enable internal CLI')

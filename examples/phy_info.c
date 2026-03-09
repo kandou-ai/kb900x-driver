@@ -24,7 +24,7 @@ static void print_header()
 {
     // Print header
     printf("| %-21s", "PHY INFO");
-    for (uint8_t lane = 0; lane < 16; lane++) {
+    for (uint8_t lane = 0; lane < KB900X_NUM_LANES; lane++) {
         printf("| LANE%02d%-5s", lane, "");
     }
     printf("|\n");
@@ -38,14 +38,14 @@ static void print_header()
  * \brief Prints a row in the terminal.
  *
  * \param[in] name The name of the row (first column)
- * \param[in] ptr A pointer to an array of kb9003_single_phy_info_t
- * \param[in] offset The offset of the phy info to display in the kb9003_single_phy_info_t structure
+ * \param[in] ptr A pointer to an array of kb900x_single_phy_info_t
+ * \param[in] offset The offset of the phy info to display in the kb900x_single_phy_info_t structure
  */
-static void print_row(char *name, kb9003_single_phy_info_t *ptr, uint32_t offset)
+static void print_row(char *name, kb900x_single_phy_info_t *ptr, uint32_t offset)
 {
     // Print row
     printf("| %-21s", name);
-    for (uint8_t lane = 0; lane < KB9003_NUM_LANES; lane++) {
+    for (uint8_t lane = 0; lane < KB900X_NUM_LANES; lane++) {
         printf("| 0x%08x ", *(uint32_t *)((uint8_t *)&ptr[lane] + offset));
     }
     printf("|\n");
@@ -82,7 +82,7 @@ int main(void)
     }
 
     KANDOU_INFO("Reading PHY info...");
-    kb9003_phy_info_t phy_info;
+    kb900x_phy_info_t phy_info;
     ret = kb900x_get_phy_info(&config, &phy_info);
     if (ret != KB900X_E_OK) {
         KANDOU_ERR("Failed to read PHY info: %s", kb900x_strerror(ret));
@@ -92,7 +92,7 @@ int main(void)
 
     // Display each side
     for (uint8_t side = 0; side < 2; side++) {
-        kb9003_single_phy_info_t *ptr;
+        kb900x_single_phy_info_t *ptr;
         if (side == 0) {
             // Print title
             printf("Side: A RX | B TX\n");
@@ -108,55 +108,55 @@ int main(void)
         print_header();
 
         // Print KB900X_RX_ATT
-        print_row("KB900X_RX_ATT", ptr, offsetof(kb9003_single_phy_info_t, rx_att));
+        print_row("KB900X_RX_ATT", ptr, offsetof(kb900x_single_phy_info_t, rx_att));
 
         // Print KB900X_RX_CTLE
-        print_row("KB900X_RX_CTLE", ptr, offsetof(kb9003_single_phy_info_t, rx_ctle));
+        print_row("KB900X_RX_CTLE", ptr, offsetof(kb900x_single_phy_info_t, rx_ctle));
 
         // Print KB900X_RX_VGA
-        print_row("KB900X_RX_VGA", ptr, offsetof(kb9003_single_phy_info_t, rx_vga));
+        print_row("KB900X_RX_VGA", ptr, offsetof(kb900x_single_phy_info_t, rx_vga));
 
         // Print KB900X_AFE_RTRIM
-        print_row("KB900X_AFE_RTRIM", ptr, offsetof(kb9003_single_phy_info_t, afe_rtrim));
+        print_row("KB900X_AFE_RTRIM", ptr, offsetof(kb900x_single_phy_info_t, afe_rtrim));
 
         // Print KB900X_RX_AFE_RATE
-        print_row("KB900X_RX_AFE_RATE", ptr, offsetof(kb9003_single_phy_info_t, rx_afe_rate));
+        print_row("KB900X_RX_AFE_RATE", ptr, offsetof(kb900x_single_phy_info_t, rx_afe_rate));
 
         // Print KB900X_RX_AFE_CONFIG
-        print_row("KB900X_RX_AFE_CONFIG", ptr, offsetof(kb9003_single_phy_info_t, rx_afe_config));
+        print_row("KB900X_RX_AFE_CONFIG", ptr, offsetof(kb900x_single_phy_info_t, rx_afe_config));
 
         // Print RX_DFE_TAP
         for (uint8_t tap = 0; tap < 8; tap++) {
             char name[20];
             sprintf(name, "RX_DFE_TAP%d", tap + 1);
-            print_row(name, ptr, offsetof(kb9003_single_phy_info_t, rx_dfe_taps[tap]));
+            print_row(name, ptr, offsetof(kb900x_single_phy_info_t, rx_dfe_taps[tap]));
         }
 
         // Print RX_DFE_FLOAT_TAP
         for (uint8_t tap = 0; tap < 4; tap++) {
             char name[20];
             sprintf(name, "RX_DFE_FLOAT_TAP%d", tap + 1);
-            print_row(name, ptr, offsetof(kb9003_single_phy_info_t, rx_dfe_float_taps[tap]));
+            print_row(name, ptr, offsetof(kb900x_single_phy_info_t, rx_dfe_float_taps[tap]));
         }
 
         // Print KB900X_RX_DFE_FLOAT_TAP_POS
         print_row("KB900X_RX_DFE_FLOAT_TAP_POS", ptr,
-                  offsetof(kb9003_single_phy_info_t, rx_dfe_float_tap_pos));
+                  offsetof(kb900x_single_phy_info_t, rx_dfe_float_tap_pos));
 
         // Print KB900X_RX_DPLL_FREQ
-        print_row("KB900X_RX_DPLL_FREQ", ptr, offsetof(kb9003_single_phy_info_t, rx_dpll_freq));
+        print_row("KB900X_RX_DPLL_FREQ", ptr, offsetof(kb900x_single_phy_info_t, rx_dpll_freq));
 
         // Print KB900X_TX_ASIC_IN_1
-        print_row("KB900X_TX_ASIC_IN_1", ptr, offsetof(kb9003_single_phy_info_t, tx_asic_in_1));
+        print_row("KB900X_TX_ASIC_IN_1", ptr, offsetof(kb900x_single_phy_info_t, tx_asic_in_1));
 
         // Print KB900X_TX_ASIC_IN_2
-        print_row("KB900X_TX_ASIC_IN_2", ptr, offsetof(kb9003_single_phy_info_t, tx_asic_in_2));
+        print_row("KB900X_TX_ASIC_IN_2", ptr, offsetof(kb900x_single_phy_info_t, tx_asic_in_2));
 
         // Print KB900X_RX_STARTUP_FOM
-        print_row("KB900X_RX_STARTUP_FOM", ptr, offsetof(kb9003_single_phy_info_t, rx_startup_fom));
+        print_row("KB900X_RX_STARTUP_FOM", ptr, offsetof(kb900x_single_phy_info_t, rx_startup_fom));
 
         // Print KB900X_RX_MM_FOM
-        print_row("KB900X_RX_MM_FOM", ptr, offsetof(kb9003_single_phy_info_t, rx_mm_fom));
+        print_row("KB900X_RX_MM_FOM", ptr, offsetof(kb900x_single_phy_info_t, rx_mm_fom));
     }
 
     kb900x_close(&config);

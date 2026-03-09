@@ -56,7 +56,7 @@ int main(void)
     }
 
     KANDOU_INFO("TX presets read successfully!");
-    for (uint32_t i = 0; i < 16; i++) {
+    for (uint32_t i = 0; i < KB900X_NUM_LANES; i++) {
         printf("config.lane_id = %d\n", presets.lanes[i].config.lane_id);
         printf("config.data_rate = %d\n", presets.lanes[i].config.data_rate);
         printf("buffer.data.ep_rt = %d\n", presets.lanes[i].data.ep_rt);

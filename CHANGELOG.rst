@@ -14,7 +14,6 @@ v0.6.0
 
 - Add timeout in TWI byteshifting fix to avoid infinite loop
 
-
 v0.5.2
 ------
 

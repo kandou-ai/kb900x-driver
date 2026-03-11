@@ -1,12 +1,19 @@
 KB900x SMBus Library Changelog
 ==============================
 
-v0.5.3
+v0.6.0
 ------
+
+**New Features / Improvements**
+
+- SMBus short format support (without PEC, without repeated Start)
+- `kb900x_get_device_id` function to retrieve the device ID of the KB900x device
+- Add support for KB900x B2
 
 **Fixes**
 
-- Add timeout to TWI byteshitfing fix loop to avoid infinite loop if communication is broken.
+- Add timeout in TWI byteshifting fix to avoid infinite loop
+
 
 v0.5.2
 ------

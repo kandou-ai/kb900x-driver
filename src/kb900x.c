@@ -384,6 +384,17 @@ int kb900x_set_communication_mode(const kb900x_config_t *config, kb900x_communic
             return KB900X_E_OK;
         }
     }
+    else if (mode == KB900X_COMM_SHORT_SMBUS) {
+        if (!kb900x_smbus_check_supported_func(config->handle, I2C_FUNC_SMBUS_I2C_BLOCK)) {
+            KANDOU_ERR("Unsupported operation: I2C_FUNC_SMBUS_I2C_BLOCK");
+            return -EOPNOTSUPP;
+        }
+        else {
+            io = (KB900X_IO){kb900x_short_smbus_write_i2c, kb900x_short_smbus_read_i2c};
+            current_mode = mode;
+            return init_fw_version(config);
+        }
+    }
 #ifdef BIC_COMMUNICATION
     else if (mode == KB900X_COMM_BIC) {
         io = (KB900X_IO){kb900x_bic_write, kb900x_bic_read};
@@ -429,13 +440,21 @@ int kb900x_detect_communication_mode(const kb900x_config_t *config,
     // Fix for bitshifting
     const uint32_t bitshifting_val = 0xFF;
     const uint8_t offset = 24;
+    const uint8_t max_attempts = 8;
+    uint8_t attempt = 0;
     uint8_t byte;
-    while (result >> offset == bitshifting_val) {
+    while (result >> offset == bitshifting_val && attempt < max_attempts) {
         KANDOU_DEBUG("Bitshifting detected");
         if (read(config->handle, &byte, 1) != 1) {
             KANDOU_ERR("Failed to read from the I2C device");
         }
         ret = kb900x_get_revid(config, &result);
+        attempt++;
+    }
+    if (attempt == max_attempts) {
+        KANDOU_ERR("Max attempts reached while trying to fix byteshifting of TWI FIFO. "
+                   "Communication with slave broken.");
+        return -EIO;
     }
 
     if (ret >= KB900X_E_OK && (result == KB900X_REVID_B0 || result == KB900X_REVID_B1)) {
@@ -803,6 +822,22 @@ int kb900x_read_register(const kb900x_config_t *config, const uint32_t address, 
 {
     int ret = io.read(config, address, KB900X_REGLI_REGISTER_ADDR_SIZE, result);
     CHECK_SUCCESS_MSG(ret, "Unable to read I2C data, err code : %d - %s", errno, strerror(errno));
+    return KB900X_E_OK;
+}
+
+int kb900x_read_global_param_register_1(const kb900x_config_t *config, uint32_t *result)
+{
+    // Ensure we are in SMBUS mode
+    kb900x_communication_mode_t mode;
+    int ret = kb900x_get_communication_mode(&mode);
+    CHECK_SUCCESS_MSG(ret, "Could not get communication mode.");
+    if (mode == KB900X_COMM_TWI) {
+        KANDOU_ERR("Cannot read global parameter register 1 in TWI mode");
+        return -EOPNOTSUPP;
+    }
+
+    ret = kb900x_smbus_read_block(config, KB900X_ADDR_VID, KB900X_SMBUS_REGISTER_ADDR_SIZE, result);
+    CHECK_SUCCESS_MSG(ret, "Could not read global parameter register 1.");
     return KB900X_E_OK;
 }
 

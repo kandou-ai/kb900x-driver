@@ -70,6 +70,20 @@ int kb900x_smbus_write_block(const kb900x_config_t *config, const uint32_t addre
 int kb900x_smbus_write_i2c(const kb900x_config_t *config, const uint32_t address,
                            const uint8_t address_size, const uint32_t value);
 
+/** \brief write an SMBus short format block (without PEC)
+ *
+ * \note This function uses the I2C_SMBUS_I2C_BLOCK_DATA command code.
+ *
+ * \param[in] config the config context
+ * \param[in] address the address
+ * \param[in] address_size the size of the address in bytes
+ * \param[in] value the value to write at the address
+ *
+ * \return the result code
+ */
+int kb900x_short_smbus_write_i2c(const kb900x_config_t *config, const uint32_t address,
+                                 const uint8_t address_size, const uint32_t value);
+
 /** \brief write an SMBus read request and reads the response.
  *
  * \note This function uses the I2C_SMBUS_BLOCK_DATA command code.
@@ -97,5 +111,19 @@ int kb900x_smbus_read_block(const kb900x_config_t *config, const uint32_t addres
  */
 int kb900x_smbus_read_i2c(const kb900x_config_t *config, const uint32_t address,
                           const uint8_t address_size, uint32_t *value);
+
+/** \brief write an SMBus short format read request and reads the response.
+ *
+ * \note This function uses the I2C_SMBUS_I2C_BLOCK_DATA command code. No PEC, no repeated Start.
+ *
+ * \param[in] config the config context
+ * \param[in] address the address
+ * \param[in] address_size the size of the address in bytes
+ * \param[out] value pointer to store the value read
+ *
+ * \return the result code
+ */
+int kb900x_short_smbus_read_i2c(const kb900x_config_t *config, const uint32_t address,
+                                const uint8_t address_size, uint32_t *value);
 
 #endif // _KB_SMBUS_COMM_H

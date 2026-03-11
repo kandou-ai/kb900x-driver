@@ -156,6 +156,48 @@ int kb900x_smbus_write_i2c(const kb900x_config_t *config, const uint32_t address
     return KB900X_E_OK;
 }
 
+int kb900x_short_smbus_write_i2c(const kb900x_config_t *config, const uint32_t address,
+                                 const uint8_t address_size, const uint32_t value)
+{
+    // We only use 4 bytes addresses with vendor defined SMBus write register
+    if (address_size != 4) {
+        KANDOU_ERR("Address size must be 4 bytes");
+        return -EINVAL;
+    }
+    struct i2c_smbus_ioctl_data blk;
+    union i2c_smbus_data i2c_data;
+    // Populate payload
+    // NO PEC
+    const uint8_t pec_size = 0;
+    const uint8_t bytecnt_size = 1;
+
+    const uint8_t payload_size = 4;
+    i2c_data.block[0] = bytecnt_size + address_size + payload_size + pec_size;
+    uint8_t bytecnt = address_size + payload_size;
+    i2c_data.block[1] = bytecnt;
+    // Copy the 4-byte address to the beginning of the buffer
+    for (size_t i = 0; i < address_size; i++) {
+        // As SMBus expect address in little endian
+        // We reverse the address to match the expected format
+        i2c_data.block[i + 2] = address >> (i * BITS_IN_BYTE) & 0xFF;
+    }
+
+    // Copy the payload after the address
+    for (size_t i = 0; i < payload_size; i++) {
+        // As SMBus expect address in little endian
+        // We reverse the payload to match the expected format
+        i2c_data.block[i + 2 + address_size] = value >> (i * BITS_IN_BYTE) & 0xFF;
+    }
+
+    blk.read_write = I2C_SMBUS_WRITE;
+    blk.command = CCODE_START_END_WRITE_FUNC3 & 0x7F; // Remove PEC bit
+    blk.size = I2C_SMBUS_I2C_BLOCK_DATA;
+    blk.data = &i2c_data;
+    int ret = ioctl(config->handle, I2C_SMBUS, &blk);
+    CHECK_IOCTL_MSG(ret, "Unable to write I2C data, err code : %d - %s", errno, strerror(errno));
+    return KB900X_E_OK;
+}
+
 int kb900x_smbus_read_block(const kb900x_config_t *config, const uint32_t address,
                             const uint8_t address_size, uint32_t *value)
 {
@@ -418,4 +460,78 @@ int kb900x_smbus_read_i2c(const kb900x_config_t *config, const uint32_t address,
     }
 
     return ret;
+}
+
+int kb900x_short_smbus_read_i2c(const kb900x_config_t *config, const uint32_t address,
+                                const uint8_t address_size, uint32_t *value)
+{
+    const uint8_t result_size = 4;
+    const uint8_t bytecnt_size = 1;
+    const uint8_t data_offset = bytecnt_size; // first byte is bytecnt
+    uint8_t command_code_start;
+    uint8_t command_code_stop;
+    int ret;
+    int retries = 0;
+    const int max_retries = 3;
+
+    while (retries < max_retries) {
+        retries++;
+        ret = get_smbus_command_code(address_size, &command_code_start, &command_code_stop);
+        CHECK_SUCCESS(ret);
+        command_code_start &= 0x7F;          // Remove PEC bit
+        command_code_start |= 0x1;           // Set end bit
+        uint8_t write_buf[2 + address_size]; // ccode + bytecount + address bytes
+        write_buf[0] = command_code_start;   // command code
+        write_buf[1] = address_size;         // byte count
+
+        for (size_t i = 0; i < address_size; i++) {
+            write_buf[2 + i] = (address >> (i * 8)) & 0xFF;
+        }
+        struct i2c_msg msgs[2];
+        struct i2c_rdwr_ioctl_data ioctl_data;
+
+        /* WRITE MESSAGE */
+        msgs[0].addr = kb900x_i2c_slave_addr;
+        msgs[0].flags = 0; // Write
+        msgs[0].len = sizeof(write_buf);
+        msgs[0].buf = write_buf;
+
+        /* READ MESSAGE */
+        uint8_t read_buf[result_size + 1]; // bytecnt + data
+        msgs[1].addr = kb900x_i2c_slave_addr;
+        msgs[1].flags = I2C_M_RD;
+        msgs[1].len = sizeof(read_buf);
+        msgs[1].buf = read_buf;
+
+        // I2C write
+        ioctl_data.msgs = &msgs[0];
+        ioctl_data.nmsgs = 1;
+
+        ret = ioctl(config->handle, I2C_RDWR, &ioctl_data);
+        if (ret < 0) {
+            continue; // retry
+        }
+        // I2C read
+        ioctl_data.msgs = &msgs[1];
+        ioctl_data.nmsgs = 1;
+
+        ret = ioctl(config->handle, I2C_RDWR, &ioctl_data);
+        if (ret < 0) {
+            continue; // retry
+        }
+        // Parse result
+        uint8_t bytecnt = read_buf[0];
+        if (bytecnt > result_size) {
+            return -EINVAL;
+        }
+
+        *value = 0;
+        for (size_t i = 0; i < bytecnt; i++) {
+            *value |= ((uint32_t)read_buf[data_offset + i]) << (i * 8);
+        }
+
+        return 0;
+    }
+
+    return -ECOMM; // all retries failed
 }

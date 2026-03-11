@@ -1,6 +1,14 @@
 KB900x SMBus Library Changelog
 ==============================
 
+v0.7.0
+------
+
+**New Features / Improvements**
+
+- Add support for KB9002 product
+- New compilation option `KB900X_PRODUCT` to enable KB9002 support
+
 v0.6.0
 ------
 

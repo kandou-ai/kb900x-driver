@@ -26,7 +26,8 @@
 #define KB900X_ADDR_TEMPERATURE (0x0510) // 0x10 = First lane A, step 0x04
 #define KB900X_ADDR_LINK_STATUS_GATHER (0x0560)
 #define KB900X_ADDR_LINK_STATUS_READY (0x0564)
-#define KB900X_ADDR_LINK_STATUS (0x0568) // 0x68 = First link 0, step 0x04 (8 links total)
+#define KB900X_ADDR_LINK_STATUS                                                                    \
+    (0x0568) // 0x68 = First link 0, step 0x04 (max 8 links for KB9003, 4 links for KB9002)
 #define KB900X_ADDR_FIRMWARE_HEALTH (0x05B0)
 
 #define KB900X_ADDR_PRESET_REQ (0x05D4)

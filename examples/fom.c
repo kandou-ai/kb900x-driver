@@ -57,12 +57,12 @@ int main(void)
 
     KANDOU_INFO("FoM read successfully:");
     printf("Side: A RX | B TX\n");
-    for (uint8_t lane = 0; lane < 16; lane++) {
+    for (uint8_t lane = 0; lane < KB900X_NUM_LANES; lane++) {
         printf("Startup FOM = %d, MM FOM = %d\n", fom.startup_a_rx[lane], fom.mm_a_rx[lane]);
     }
 
     printf("Side: A TX | B RX\n");
-    for (uint8_t lane = 0; lane < 16; lane++) {
+    for (uint8_t lane = 0; lane < KB900X_NUM_LANES; lane++) {
         printf("Startup FOM = %d, MM FOM = %d\n", fom.startup_b_rx[lane], fom.mm_b_rx[lane]);
     }
 

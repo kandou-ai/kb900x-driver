@@ -31,11 +31,19 @@
 #define KB900X_LINK_STATUS_TIMEOUT (500) // FIXME magic number - How much do we have to wait?
 #define KB900X_SIZEOF_SW_SHARED_DATA                                                               \
     (0x400 * 4) // NOTE: MUST be a multiple of 4, because we can only read in 4B chunks
-#define KB9003_NUM_TILES (4)
+#ifdef KB9002
+#define KB900X_NUM_TILES (2)
+#else
+#define KB900X_NUM_TILES (4)
+#endif
+#define KB900X_NUM_LANES (KB900X_NUM_TILES * 4)
+#define KB900X_MAX_NUM_LINKS (KB900X_NUM_LANES / 2)
+#ifdef KB9002
+#define KB900X_NUM_RPCS (4)
+#else
 #define KB900X_NUM_RPCS (8)
+#endif
 #define KB900X_NUM_RPCS_EVENTS (128)
-#define KB9003_NUM_LANES (16)
-#define KB9003_MAX_NUM_LINKS (8)
 #define KB900X_DCCM_END_ADDR_A0 (0x80008000)
 #define KB900X_DCCM_END_ADDR_B0_B1 (0x80010000)
 #define KB900X_SDS_MAGIC_HEADER (0x4B425353) // 'KBSS' big-endian
@@ -166,6 +174,7 @@ typedef enum {
     KB900X_COMM_BIC = 2,
     KB900X_COMM_SHORT_SMBUS = 3
 } kb900x_communication_mode_t;
+
 // NOTE: these comments are used to denote what must be included in the headerfile for the CFFI
 //! CFFI END
 
@@ -213,6 +222,8 @@ typedef union {
 static_assert(sizeof(kb900x_fw_version_t) == sizeof(uint32_t),
               "kb900x_fw_version_t size mismatch!");
 
+// NOTE: these comments are used to denote what must be included in the headerfile for the CFFI
+//! CFFI
 /**
  * \brief This struct is used to hold the firmware health (kb900x_get_firmware_health)
  */
@@ -227,6 +238,9 @@ typedef union {
     };
     uint32_t raw;
 } kb900x_fw_health_t;
+
+// NOTE: these comments are used to denote what must be included in the headerfile for the CFFI
+//! CFFI END
 static_assert(sizeof(kb900x_fw_health_t) == sizeof(uint32_t), "kb900x_fw_health_t size mismatch!");
 
 /**
@@ -284,7 +298,7 @@ typedef struct {
  * \brief The preset config structure
  */
 typedef struct {
-    /** The lane ID in range 0 to 15*/
+    /** The lane ID (range depends on product: 0-7 for KB9002, 0-15 for KB9003)*/
     uint8_t lane_id;
     /** The data rate in range 0 to 4 (PCIe Gen 5 = 4, PCIe Gen4 = 3, ...)*/
     uint8_t data_rate;
@@ -325,9 +339,9 @@ static_assert(sizeof(kb900x_presets_t) == 2 * sizeof(uint32_t), "kb900x_presets_
  * \brief The presets for all lanes structure
  */
 typedef struct {
-    kb900x_presets_t lanes[KB9003_NUM_LANES];
+    kb900x_presets_t lanes[KB900X_NUM_LANES];
 } ALIGN_PACKED(4) kb900x_all_presets_t;
-static_assert(sizeof(kb900x_all_presets_t) == 32 * sizeof(uint32_t),
+static_assert(sizeof(kb900x_all_presets_t) == KB900X_NUM_LANES * sizeof(kb900x_presets_t),
               "kb900x_all_presets_t size mismatch!");
 
 /**
@@ -396,15 +410,16 @@ static_assert(sizeof(kb900x_hw_rtssm_logs_t) == 8 * 17 * sizeof(uint32_t),
  */
 typedef struct {
     /** Startup FOM on side A RX | B TX */
-    uint8_t startup_a_rx[16];
+    uint8_t startup_a_rx[KB900X_NUM_LANES];
     /** Mission mode FOM on side A RX | B TX */
-    uint8_t mm_a_rx[16];
+    uint8_t mm_a_rx[KB900X_NUM_LANES];
     /** Startup FOM on side A TX | B RX */
-    uint8_t startup_b_rx[16];
+    uint8_t startup_b_rx[KB900X_NUM_LANES];
     /** Mission mode FOM on side A TX | B RX */
-    uint8_t mm_b_rx[16];
+    uint8_t mm_b_rx[KB900X_NUM_LANES];
 } ALIGN_PACKED(4) kb900x_fom_t;
-static_assert(sizeof(kb900x_fom_t) == 16 * sizeof(uint32_t), "kb900x_fom_t size mismatch!");
+static_assert(sizeof(kb900x_fom_t) == KB900X_NUM_LANES * sizeof(uint32_t),
+              "kb900x_fom_t size mismatch!");
 
 /**
  * \brief Struct used to map a lane to HW block IDs
@@ -425,10 +440,10 @@ typedef struct {
  */
 typedef struct {
     /** Side A RX | B TX */
-    kb900x_lane_mapping_t a_rx[16];
+    kb900x_lane_mapping_t a_rx[KB900X_NUM_LANES];
     /** Side A TX | B RX */
-    kb900x_lane_mapping_t b_rx[16];
-} ALIGN_PACKED(4) kb9003_mapping_t;
+    kb900x_lane_mapping_t b_rx[KB900X_NUM_LANES];
+} ALIGN_PACKED(4) kb900x_mapping_t;
 
 /**
  * \brief Struct containing the phy info for a single phy
@@ -462,19 +477,19 @@ typedef struct {
     uint32_t rx_startup_fom;
     /** RX_MM_FOM */
     uint32_t rx_mm_fom;
-} ALIGN_PACKED(4) kb9003_single_phy_info_t;
+} ALIGN_PACKED(4) kb900x_single_phy_info_t;
 
 /**
  * \brief Struct containing the phy info (all lanes)
  */
 typedef struct {
     /** Side A RX | B TX */
-    kb9003_single_phy_info_t a_rx[16];
+    kb900x_single_phy_info_t a_rx[KB900X_NUM_LANES];
     /** Side A TX | B RX */
-    kb9003_single_phy_info_t b_rx[16];
-} ALIGN_PACKED(4) kb9003_phy_info_t;
-static_assert(sizeof(kb9003_phy_info_t) == 32 * sizeof(kb9003_single_phy_info_t),
-              "kb9003_phy_info_t size mismatch!");
+    kb900x_single_phy_info_t b_rx[KB900X_NUM_LANES];
+} ALIGN_PACKED(4) kb900x_phy_info_t;
+static_assert(sizeof(kb900x_phy_info_t) == 2 * KB900X_NUM_LANES * sizeof(kb900x_single_phy_info_t),
+              "kb900x_phy_info_t size mismatch!");
 
 /**
  * \brief Struct containing a single SW RTSSM entry
@@ -519,9 +534,9 @@ static_assert(sizeof(kb900x_rpcs_debug_counter_entry_t) == 2 * sizeof(uint32_t),
  */
 typedef struct {
     kb900x_rpcs_debug_counter_entry_t
-        entries[KB900X_NUM_RPCS * KB9003_NUM_TILES * KB900X_NUM_RPCS_EVENTS];
+        entries[KB900X_NUM_RPCS * KB900X_NUM_TILES * KB900X_NUM_RPCS_EVENTS];
 } ALIGN_PACKED(4) kb900x_rpcs_debug_counter_t;
-static_assert(sizeof(kb900x_rpcs_debug_counter_t) == KB900X_NUM_RPCS * KB9003_NUM_TILES *
+static_assert(sizeof(kb900x_rpcs_debug_counter_t) == KB900X_NUM_RPCS * KB900X_NUM_TILES *
                                                          KB900X_NUM_RPCS_EVENTS *
                                                          sizeof(kb900x_rpcs_debug_counter_entry_t),
               "kb900x_rpcs_debug_counter_t size mismatch!");
@@ -634,18 +649,20 @@ int kb900x_switch_communication_mode(const kb900x_config_t *config,
 
 /** \brief Read the temperature of a retimer lane.
  *
- * The lane information is encoded in `side` and `lane`. The retimer has 2 sides (A and B)
- * and 16 lanes on each side.
+ * The lane information is encoded in `side` and `lane`. The retimer has 2 sides (A and B).
+ * The number of lanes per side depends on the product: 8 lanes for KB9002, 16 lanes for KB9003.
  *
  * \warning Only in SMBUS / BIC mode.
  *
  * \note This function gets the temperature of the sensor close to the provided lane.
- * There are 16 sensors in total on the KB9003 (1 sensor for 2 lanes). Therefore
- * adjacent lanes may have the same temperature.
+ * The number of sensors depends on the product (1 sensor for 2 lanes):
+ * - KB9002: 8 sensors total (4 per side)
+ * - KB9003: 16 sensors total (8 per side)
+ * Therefore adjacent lanes may have the same temperature.
  *
  * \param[in] config the config context, cannot be NULL
  * \param[in] side the side, 0 = side A (upstream), anything else = side B (downstream)
- * \param[in] lane the lane id, 0 to 15
+ * \param[in] lane the lane id (range depends on product: 0-7 for KB9002, 0-15 for KB9003)
  * \param[out] temperature pointer to the temperature[Celsius], cannot be NULL
  *
  * \return 0 if no error, else the error code
@@ -695,6 +712,8 @@ int kb900x_get_vendor_id(const kb900x_config_t *config, uint32_t *vendor_id);
  */
 int kb900x_get_firmware_version(const kb900x_config_t *config, kb900x_fw_version_t *fw_version);
 
+// NOTE: these comments are used to denote what must be included in the headerfile for the CFFI
+//! CFFI
 /** \brief Read the firmware health information.
  *
  * \warning Only in SMBUS / BIC mode.
@@ -705,6 +724,8 @@ int kb900x_get_firmware_version(const kb900x_config_t *config, kb900x_fw_version
  * \return 0 if no error, else the error code
  */
 int kb900x_get_firmware_health(const kb900x_config_t *config, kb900x_fw_health_t *firmware_health);
+// NOTE: these comments are used to denote what must be included in the headerfile for the CFFI
+//! CFFI END
 
 /** \brief Read the SW RTSSM log.
  *
@@ -733,7 +754,7 @@ int kb900x_get_sw_rtssm_log(const kb900x_config_t *config, kb900x_sw_rtssm_logs_
  * link_status.link_invalid == 1.
  *
  * \param[in] config the config context, cannot be NULL
- * \param[in] link_id the link id (0-7)
+ * \param[in] link_id the link id (range depends on product: 0-3 for KB9002, 0-7 for KB9003)
  * \param[out] link_status pointer to the link status, cannot be NULL
  *
  * \return 0 if no error, else the error code
@@ -916,7 +937,7 @@ int kb900x_get_fom(const kb900x_config_t *config, kb900x_fom_t *fom);
  *
  * \return 0 if no error, else the error code
  */
-int kb900x_get_phy_info(const kb900x_config_t *config, kb9003_phy_info_t *phy_info);
+int kb900x_get_phy_info(const kb900x_config_t *config, kb900x_phy_info_t *phy_info);
 
 /**
  * \brief Get the firmware trace.
@@ -1024,7 +1045,7 @@ int kb900x_log_fom(const kb900x_fom_t *data, const char *filename);
  *
  * \return 0 if no error, else the error code
  */
-int kb900x_log_phy_info(const kb9003_phy_info_t *data, const char *filename);
+int kb900x_log_phy_info(const kb900x_phy_info_t *data, const char *filename);
 
 /**
  * \brief Generate a log file from the SW RTSSM logs.

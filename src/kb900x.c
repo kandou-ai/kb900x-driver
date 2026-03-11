@@ -36,7 +36,8 @@ KB900X_IO io = {kb900x_i2c_write, kb900x_i2c_read};
 kb900x_communication_mode_t current_mode = KB900X_COMM_TWI;
 #endif
 
-const kb9003_mapping_t kb9003_mapping = {
+#ifdef KB9003
+const kb900x_mapping_t kb900x_mapping = {
     .a_rx =
         {
             {
@@ -236,6 +237,112 @@ const kb9003_mapping_t kb9003_mapping = {
             },
         },
 };
+#else
+const kb900x_mapping_t kb900x_mapping = {
+    .a_rx =
+        {
+            {
+                .tile_id = 0,
+                .phy_id = 0,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 0,
+                .phy_id = 0,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 0,
+                .phy_id = 1,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 0,
+                .phy_id = 1,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 3,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 3,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 2,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 2,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+        },
+    .b_rx =
+        {
+            {
+                .tile_id = 0,
+                .phy_id = 2,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 0,
+                .phy_id = 2,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 0,
+                .phy_id = 3,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 0,
+                .phy_id = 3,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 1,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 1,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 0,
+                .phy_lane_id = 0,
+                .rpcs_id = 0,
+            },
+            {
+                .tile_id = 1,
+                .phy_id = 0,
+                .phy_lane_id = 1,
+                .rpcs_id = 0,
+            },
+        },
+};
+#endif
 // Global (const) used to store the RTSSM states strings
 const char *KB900X_STATE_STRING[] = {KB900X_FOREACH_STATE(KB900X_GENERATE_STRING)};
 
@@ -521,9 +628,9 @@ int kb900x_get_lane_temperature(const kb900x_config_t *config, int side, int lan
 {
     KB900X_ENSURE_MINIMAL_FW_VERSION(2, 0, 3);
 
-    if (lane >= KB9003_NUM_LANES || lane < 0 || side < 0) {
-        KANDOU_ERR("Invalid lane or side: %d, %d - Number of lanes : ", lane, side,
-                   KB9003_NUM_LANES);
+    if (lane >= KB900X_NUM_LANES || lane < 0 || side < 0) {
+        KANDOU_ERR("Invalid lane or side: %d, %d - Number of lanes : %d", lane, side,
+                   KB900X_NUM_LANES);
         return -EINVAL;
     }
     int ret = 0;
@@ -562,7 +669,7 @@ int kb900x_get_temperature(const kb900x_config_t *config, float *temperature)
     float max_temperature = ABSOLUTE_ZERO;
     float tmp_temperature = 0;
     for (int port = 0; port < nb_ports; port++) {
-        for (int lane = 0; lane < KB9003_NUM_LANES; lane++) {
+        for (int lane = 0; lane < KB900X_NUM_LANES; lane++) {
             ret = kb900x_get_lane_temperature(config, port, lane, &tmp_temperature);
             CHECK_SUCCESS_MSG(ret, "Error: Unable to get temperature for lane %d, port %d", lane,
                               port);
@@ -765,9 +872,9 @@ int kb900x_get_link_status(const kb900x_config_t *config, int link_id,
         return -EINVAL;
     }
 
-    if (link_id >= KB9003_MAX_NUM_LINKS || link_id < 0) {
+    if (link_id >= KB900X_MAX_NUM_LINKS || link_id < 0) {
         KANDOU_ERR("Invalid link id: %d - Number of links (link_id starts at 0): %d", link_id,
-                   KB9003_MAX_NUM_LINKS);
+                   KB900X_MAX_NUM_LINKS);
         return -EINVAL;
     }
 
@@ -1231,9 +1338,9 @@ int kb900x_get_fom(const kb900x_config_t *config, kb900x_fom_t *fom)
     kb900x_lane_mapping_t mapping;
     int ret;
 
-    for (uint8_t lane = 0; lane < KB9003_NUM_LANES; lane++) {
+    for (uint8_t lane = 0; lane < KB900X_NUM_LANES; lane++) {
         // A RX | B TX side
-        mapping = kb9003_mapping.a_rx[lane];
+        mapping = kb900x_mapping.a_rx[lane];
 
         // Startup FOM
         addr = KB900X_RX_STARTUP_FOM_ADDR(mapping.tile_id, mapping.phy_id, mapping.phy_lane_id);
@@ -1248,7 +1355,7 @@ int kb900x_get_fom(const kb900x_config_t *config, kb900x_fom_t *fom)
         fom->mm_a_rx[lane] = val & 0xFF;
 
         // A TX | B RX side
-        mapping = kb9003_mapping.b_rx[lane];
+        mapping = kb900x_mapping.b_rx[lane];
 
         // Startup FOM
         addr = KB900X_RX_STARTUP_FOM_ADDR(mapping.tile_id, mapping.phy_id, mapping.phy_lane_id);
@@ -1325,11 +1432,11 @@ static int kb900x_get_bank(const kb900x_config_t *config, uint8_t *bank,
  * \brief Local function to get the phy info for a single lane
  *
  * \param[in] config the config context
- * \param[out] phy_info a pointer to kb9003_single_phy_info_t to store the phy info
+ * \param[out] phy_info a pointer to kb900x_single_phy_info_t to store the phy info
  * \param[in] phy_mapping the mapping used to select the phy
  */
 static int kb900x_get_single_phy_info(const kb900x_config_t *config,
-                                      kb9003_single_phy_info_t *phy_info,
+                                      kb900x_single_phy_info_t *phy_info,
                                       kb900x_lane_mapping_t phy_mapping)
 {
     int ret;
@@ -1436,20 +1543,20 @@ static int kb900x_get_single_phy_info(const kb900x_config_t *config,
     return KB900X_E_OK;
 }
 
-int kb900x_get_phy_info(const kb900x_config_t *config, kb9003_phy_info_t *phy_info)
+int kb900x_get_phy_info(const kb900x_config_t *config, kb900x_phy_info_t *phy_info)
 {
     int ret;
     kb900x_lane_mapping_t mapping;
 
-    for (uint8_t lane = 0; lane < KB9003_NUM_LANES; lane++) {
+    for (uint8_t lane = 0; lane < KB900X_NUM_LANES; lane++) {
         // A RX | B TX side
-        mapping = kb9003_mapping.a_rx[lane];
+        mapping = kb900x_mapping.a_rx[lane];
 
         ret = kb900x_get_single_phy_info(config, &(phy_info->a_rx[lane]), mapping);
         CHECK_SUCCESS_MSG(ret, "Error: Unable to read phy info (A TX | B RX side)");
 
         // A TX | B RX side
-        mapping = kb9003_mapping.b_rx[lane];
+        mapping = kb900x_mapping.b_rx[lane];
 
         ret = kb900x_get_single_phy_info(config, &(phy_info->b_rx[lane]), mapping);
         CHECK_SUCCESS_MSG(ret, "Error: Unable to read phy info (A RX | B TX side)");
@@ -1499,7 +1606,7 @@ int kb900x_get_phy_rpcs_registers(const kb900x_config_t *config, kb900x_register
         return -EINVAL;
     }
     // Read the RPCS registers
-    for (uint8_t tile = 0; tile < KB9003_NUM_TILES; tile++) {
+    for (uint8_t tile = 0; tile < KB900X_NUM_TILES; tile++) {
         for (uint32_t i = 0; i < KB900X_NUM_PHY_RPCS_REGISTERS; i++) {
             const uint32_t addr = ((KB900X_PHY_RPCS_REG_ADDR[i] << 8) >> 8) | ((0xe0 + tile) << 24);
             const uint32_t index = i + tile * KB900X_NUM_PHY_RPCS_REGISTERS;
@@ -1526,7 +1633,7 @@ int kb900x_get_rpcs_dbg_counter(const kb900x_config_t *config,
 
     // Fetch the RPCS debug counter registers
     const uint8_t addr_read_offset = 4;
-    for (uint8_t tile = 0; tile < KB9003_NUM_TILES; tile++) {
+    for (uint8_t tile = 0; tile < KB900X_NUM_TILES; tile++) {
         for (uint8_t rpcs = 0; rpcs < KB900X_NUM_RPCS; rpcs++) {
             const uint32_t addr_conf = KB900X_RPCS_DBG_COUNTER_ADDR_CONF(tile, rpcs);
             const uint32_t addr_read = KB900X_RPCS_DBG_COUNTER_ADDR_READ(addr_conf);
@@ -1681,7 +1788,7 @@ int kb900x_log_tx_presets(const kb900x_all_presets_t *data, const char *filename
     fprintf(file, "{\n");
     fprintf(file, "    \"lanes\": [\n");
 
-    for (int i = 0; i < KB9003_NUM_LANES; i++) {
+    for (int i = 0; i < KB900X_NUM_LANES; i++) {
         fprintf(file, "        {\n");
         fprintf(file, "            \"config\": {\n");
         fprintf(file, "                \"lane_id\": %u,\n", data->lanes[i].config.lane_id);
@@ -1695,7 +1802,7 @@ int kb900x_log_tx_presets(const kb900x_all_presets_t *data, const char *filename
         fprintf(file, "                \"rc_rt\": %u,\n", data->lanes[i].data.rc_rt);
         fprintf(file, "                \"ep_rt\": %u\n", data->lanes[i].data.ep_rt);
         fprintf(file, "            }\n");
-        fprintf(file, "        }%s\n", (i < KB9003_NUM_LANES - 1) ? "," : "");
+        fprintf(file, "        }%s\n", (i < KB900X_NUM_LANES - 1) ? "," : "");
     }
 
     fprintf(file, "    ]\n");
@@ -1713,7 +1820,7 @@ int kb900x_log_fom(const kb900x_fom_t *data, const char *filename)
         return -KB900X_E_ERR;
     }
 
-    uint8_t nb_lanes = KB9003_NUM_LANES;
+    uint8_t nb_lanes = KB900X_NUM_LANES;
 
     fprintf(file, "{\n");
 
@@ -1751,7 +1858,7 @@ int kb900x_log_fom(const kb900x_fom_t *data, const char *filename)
     return KB900X_E_OK;
 }
 
-int kb900x_log_phy_info(const kb9003_phy_info_t *data, const char *filename)
+int kb900x_log_phy_info(const kb900x_phy_info_t *data, const char *filename)
 {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
@@ -1917,7 +2024,7 @@ int kb900x_log_rpcs_dbg_counter(const kb900x_rpcs_debug_counter_t *data, const c
         KANDOU_ERR("Error while trying to create/open log file: %s", filename);
         return -KB900X_E_ERR;
     }
-    const uint32_t nb_entries = KB9003_NUM_TILES * KB900X_NUM_RPCS * KB900X_NUM_RPCS_EVENTS;
+    const uint32_t nb_entries = KB900X_NUM_TILES * KB900X_NUM_RPCS * KB900X_NUM_RPCS_EVENTS;
     fprintf(file, "[\n");
     for (uint32_t i = 0; i < nb_entries; i++) {
         fprintf(file, "    {\n");
@@ -1973,7 +2080,7 @@ int kb900x_error_dump(const kb900x_config_t *config, const char *filename)
     kb900x_all_presets_t tx_presets = {0};
     kb900x_sw_rtssm_logs_t sw_rtssm = {0};
     kb900x_hw_rtssm_logs_t hw_rtssm = {0};
-    kb9003_phy_info_t phy_info = {0};
+    kb900x_phy_info_t phy_info = {0};
     kb900x_register_record_t trace_records[KB900X_FW_TRACE_SIZE] = {0};
     kb900x_register_dump_t trace = {
         .num_records = KB900X_FW_TRACE_SIZE,

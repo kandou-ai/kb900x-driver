@@ -47,7 +47,6 @@ meson setup . build -D$option=$value
 Here are the available options :
 - `enable_test` : Enable the tests (default : false)
 - `logging_colors` : Enable the colors for the logging output (default : false)
-- `product` : Specify the KB900x product to build for (default : kb9003, other options : kb9002)
 
 ### Use
 

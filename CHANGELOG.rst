@@ -8,6 +8,7 @@ v0.7.0
 
 - Add support for KB9002 product
 - New compilation option `KB900X_PRODUCT` to enable KB9002 support
+- kb900x_read_global_param_register_1 to get the value of the global parameter register 1
 
 v0.6.0
 ------
@@ -18,9 +19,12 @@ v0.6.0
 - `kb900x_get_device_id` function to retrieve the device ID of the KB900x device
 - Add support for KB900x B2
 
+v0.5.3
+------
+
 **Fixes**
 
-- Add timeout in TWI byteshifting fix to avoid infinite loop
+- Add timeout to TWI byteshitfing fix loop to avoid infinite loop if communication is broken.
 
 v0.5.2
 ------

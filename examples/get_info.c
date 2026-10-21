@@ -42,7 +42,7 @@ int main(void)
     CHECK_SUCCESS_MSG(ret, "Failed to open I2C interface.");
     KANDOU_INFO("I2C handle = %d", config.handle);
 
-    // Switch to SMBUS mode (required to various debug info)
+    // Switch to SMBUS mode (required for various debug info)
     KANDOU_INFO("Switching to SMBUS mode...");
     ret = kb900x_switch_communication_mode(&config, KB900X_COMM_SMBUS);
     if (ret != KB900X_E_OK) {
@@ -78,7 +78,7 @@ int main(void)
     // Get the vendor id
     ret = kb900x_get_vendor_id(&config, &vendor_id);
     if (ret != KB900X_E_OK) {
-        KANDOU_ERR("Failed to read vendor IR: %s", kb900x_strerror(ret));
+        KANDOU_ERR("Failed to read vendor ID: %s", kb900x_strerror(ret));
         kb900x_close(&config);
         return -1;
     }
@@ -101,7 +101,7 @@ int main(void)
         kb900x_close(&config);
         return -1;
     }
-    KANDOU_INFO("Temperature Port A, Lane 0 = %02f", temperature);
+    KANDOU_INFO("Temperature Port A, Lane 0 = %.2f", temperature);
 
     // Get the temperature for the Port B, Lane 3
     ret = kb900x_get_lane_temperature(&config, 1, 3, &temperature);
@@ -110,7 +110,7 @@ int main(void)
         kb900x_close(&config);
         return -1;
     }
-    KANDOU_INFO("Temperature Port B, Lane 3 = %02f", temperature);
+    KANDOU_INFO("Temperature Port B, Lane 3 = %.2f", temperature);
 
     // Get the maximum temperature of the package
     ret = kb900x_get_temperature(&config, &temperature);
@@ -119,7 +119,7 @@ int main(void)
         kb900x_close(&config);
         return -1;
     }
-    KANDOU_INFO("Maximum package temperature = %02f", temperature);
+    KANDOU_INFO("Maximum package temperature = %.2f", temperature);
 
     // Close the connection with KB900x
     KANDOU_INFO("Closing device...");

@@ -530,6 +530,21 @@ static_assert(sizeof(kb900x_rpcs_debug_counter_entry_t) == 2 * sizeof(uint32_t),
               "kb900x_rpcs_debug_counter_t size mismatch!");
 
 /**
+ * \brief Struct to hold the link health status information for one link.
+
+ */
+typedef struct {
+    uint32_t pre_upp_error_counter;  // Pre-EQ UPP sync-header errors
+    uint32_t pre_upp_total_counter;  // Pre-EQ UPP total observations
+    uint32_t pre_dpp_error_counter;  // Pre-EQ DPP sync-header errors
+    uint32_t pre_dpp_total_counter;  // Pre-EQ DPP total observations
+    uint32_t post_upp_error_counter; // Post-EQ UPP sync-header errors
+    uint32_t post_upp_total_counter; // Post-EQ UPP total observations
+    uint32_t post_dpp_error_counter; // Post-EQ DPP sync-header errors
+    uint32_t post_dpp_total_counter; // Post-EQ DPP total observations
+} kb900x_eqz_sync_hdr_err_info_t;    // Total: 32 B (8 × 4 B)
+
+/**
  * \brief Struct to hold the RPCS debug counter informations
  */
 typedef struct {
@@ -683,6 +698,19 @@ int kb900x_get_lane_temperature(const kb900x_config_t *config, int side, int lan
  */
 int kb900x_get_temperature(const kb900x_config_t *config, float *temperature);
 
+/** \brief Read the max retimer temperature.
+ *
+ * This function reads the maximum temperature of the retimer.
+ *
+ * \warning Only in SMBUS / BIC mode.
+ *
+ * \param[in] config the config context, cannot be NULL
+ * \param[out] temperature pointer to the temperature[Celsius], cannot be NULL
+ *
+ * \return 0 if no error, else the error code
+ */
+int kb900x_get_max_temperature(const kb900x_config_t *config, float *temperature);
+
 /** \brief Get the vendor ID.
  *
  * \warning Only in SMBUS / BIC mode.
@@ -698,6 +726,18 @@ int kb900x_get_temperature(const kb900x_config_t *config, float *temperature);
  * \return 0 if no error, else the error code
  */
 int kb900x_get_vendor_id(const kb900x_config_t *config, uint32_t *vendor_id);
+
+/** \brief Read the link health status information.
+ *
+ * \warning Only in SMBUS / BIC mode.
+ *
+ * \param[in] config the config context, cannot be NULL
+ * \param[out] firmware_health pointer to the firmware health, cannot be NULL
+ *
+ * \return 0 if no error, else the error code
+ */
+int kb900x_get_link_health_status(const kb900x_config_t *config,
+                                  kb900x_eqz_sync_hdr_err_info_t *info, uint32_t *num_links);
 
 /** \brief Read the retimer firmware version.
  *

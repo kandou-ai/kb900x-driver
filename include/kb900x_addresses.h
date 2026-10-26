@@ -24,6 +24,7 @@
 #define KB900X_ADDR_VID (0x0004)
 #define KB900X_ADDR_FW_VERSION (0x0500)
 #define KB900X_ADDR_TEMPERATURE (0x0510) // 0x10 = First lane A, step 0x04
+#define KB900X_ADDR_MAX_TEMPERATURE (0x0550)
 #define KB900X_ADDR_LINK_STATUS_GATHER (0x0560)
 #define KB900X_ADDR_LINK_STATUS_READY (0x0564)
 #define KB900X_ADDR_LINK_STATUS                                                                    \
@@ -39,6 +40,12 @@
 #define KB900X_ADDR_RTSSM_STATUS (0x05C8)
 #define KB900X_ADDR_RTSSM_START_ADDR (0x05CC)
 #define KB900X_ADDR_RTSSM_LENGTH (0x05D0)
+
+// Link Health Status
+#define KB900X_LINK_HEALTH_STATUS_REQ (0x05F4)
+#define KB900X_LINK_HEALTH_STATUS_OPN_STATUS (0x05F8)
+#define KB900X_LINK_HEALTH_STATUS_DCCM_START_ADDR (0x05FC)
+#define KB900X_LINK_HEALTH_STATUS_DCCM_LENGTH (0x0600)
 
 // Register addresses
 #define kb900x_cpu_reset_vector_addr 0xe0090010

@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+#define _DEFAULT_SOURCE
+
 #include "kb900x.h"
 #include "kb900x_addresses.h"
 #include "kb900x_i2c_master.h"
 #include "kb900x_reg_dump.h"
+#include "unistd.h"
 #include <string.h>
 #include <time.h>
 #ifdef BIC_COMMUNICATION
@@ -602,13 +605,12 @@ int kb900x_switch_communication_mode(const kb900x_config_t *config,
     int ret = kb900x_read_register(config, mux_addr, &mux_value);
     CHECK_SUCCESS_MSG(ret, "Error: Unable to read MUX register");
     // Update it
+    const uint32_t mask = 0x2;
     if (mode == KB900X_COMM_SMBUS) {
-        const uint32_t mask = 0x2;
         mux_value = mux_value | mask; // Set second bit to 1
     }
     else if (mode == KB900X_COMM_TWI) {
-        KANDOU_ERR("Switch to I2C is not implemented");
-        return -KB900X_E_NOT_IMPLEMENTED;
+        mux_value &= ~mask; // Set second bit to 0
     }
     // Send new value
     ret = kb900x_write_register(config, mux_addr, mux_value);
@@ -685,6 +687,98 @@ int kb900x_get_temperature(const kb900x_config_t *config, float *temperature)
         }
     }
     *temperature = max_temperature;
+    return KB900X_E_OK;
+}
+
+int kb900x_get_max_temperature(const kb900x_config_t *config, float *temperature)
+{
+    KB900X_ENSURE_MINIMAL_FW_VERSION(2, 0, 3);
+
+    int ret = KB900X_E_ERR;
+    uint32_t value = 0;
+
+    ret = io.read(config, KB900X_ADDR_MAX_TEMPERATURE, KB900X_SMBUS_REGISTER_ADDR_SIZE, &value);
+    CHECK_SUCCESS_MSG(ret, "Unable to read max temperature, err code : %d - %s", errno,
+                      strerror(errno));
+
+    const int precision = 1 << FLOAT_PRECISION;
+    uint8_t rx_buf[KB900X_SMBUS_REGISTER_SIZE] = {
+        (value >> 24) & 0xFF,
+        (value >> 16) & 0xFF,
+        (value >> 8) & 0xFF,
+        value & 0xFF,
+    };
+    *temperature = ((float)(rx_buf[3] + (rx_buf[2] << 8) + (rx_buf[1] << 16) + (rx_buf[0] << 24)) /
+                    precision) +
+                   ABSOLUTE_ZERO;
+
+    return KB900X_E_OK;
+}
+
+int kb900x_get_link_health_status(const kb900x_config_t *config,
+                                  kb900x_eqz_sync_hdr_err_info_t *info, uint32_t *num_links)
+{
+    KB900X_ENSURE_MINIMAL_FW_VERSION(2, 0, 3);
+    uint32_t status;
+    uint32_t start_addr;
+    uint32_t value;
+    int ret = KB900X_E_ERR;
+    uint32_t length;
+
+    ret = io.read(config, KB900X_LINK_HEALTH_STATUS_REQ, KB900X_SMBUS_REGISTER_ADDR_SIZE, &value);
+    CHECK_SUCCESS_MSG(ret, "Unable to link health status request, err code : %d - %s", errno,
+                      strerror(errno));
+
+    status = KB900X_FEAT_REQ_STATUS_NOT_SET;
+
+    while (status != KB900X_FEAT_REQ_STATUS_SUCCESS) {
+        ret = io.read(config, KB900X_LINK_HEALTH_STATUS_OPN_STATUS, KB900X_SMBUS_REGISTER_ADDR_SIZE,
+                      &status);
+        CHECK_SUCCESS_MSG(ret, "Unable to link health status open status, err code : %d - %s",
+                          errno, strerror(errno));
+
+        if (status != KB900X_FEAT_REQ_STATUS_SUCCESS) {
+            usleep(10000);
+        }
+    }
+
+    ret = io.read(config, KB900X_LINK_HEALTH_STATUS_DCCM_START_ADDR,
+                  KB900X_SMBUS_REGISTER_ADDR_SIZE, &start_addr);
+    CHECK_SUCCESS_MSG(ret, "Unable to link health status DCCM start Addr, err code : %d - %s",
+                      errno, strerror(errno));
+
+    ret = io.read(config, KB900X_LINK_HEALTH_STATUS_DCCM_LENGTH, KB900X_SMBUS_REGISTER_ADDR_SIZE,
+                  &length);
+    CHECK_SUCCESS_MSG(ret, "Unable to link health status DCCM start Addr, err code : %d - %s",
+                      errno, strerror(errno));
+
+    uint32_t max_length = KB900X_MAX_NUM_LINKS * sizeof(kb900x_eqz_sync_hdr_err_info_t);
+    if (length == 0 || length > max_length) {
+        KANDOU_ERR("Invalid link health length reported by firmware: %u bytes (max %u)", length,
+                   max_length);
+        return -EINVAL;
+    }
+
+    if ((length % sizeof(kb900x_eqz_sync_hdr_err_info_t)) != 0) {
+        KANDOU_ERR("Invalid link health payload length");
+        return -EINVAL;
+    }
+
+    *num_links = length / sizeof(kb900x_eqz_sync_hdr_err_info_t);
+
+    uint32_t words = length / 4;
+    uint32_t buffer[words];
+
+    for (uint32_t i = 0; i < words; i++) {
+        uint32_t address = start_addr + (i * 4);
+
+        ret = kb900x_read_register(config, address, &buffer[i]);
+
+        CHECK_SUCCESS_MSG(ret, "Failed reading EQZ info. Address: 0x%08x", address);
+    }
+
+    memcpy( // NOLINT boundaries already checked with surrounding if conditions
+        info, buffer, length);
     return KB900X_E_OK;
 }
 
@@ -1870,7 +1964,7 @@ int kb900x_log_phy_info(const kb900x_phy_info_t *data, const char *filename)
 
     // Write a_rx array
     fprintf(file, "    \"a_rx\": [\n");
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < KB900X_NUM_LANES; i++) {
         fprintf(file, "        {\n");
         fprintf(file, "            \"rx_att\": %u,\n", data->a_rx[i].rx_att);
         fprintf(file, "            \"rx_ctle\": %u,\n", data->a_rx[i].rx_ctle);
@@ -1893,13 +1987,13 @@ int kb900x_log_phy_info(const kb900x_phy_info_t *data, const char *filename)
         fprintf(file, "            \"tx_asic_in_2\": %u,\n", data->a_rx[i].tx_asic_in_2);
         fprintf(file, "            \"rx_startup_fom\": %u,\n", data->a_rx[i].rx_startup_fom);
         fprintf(file, "            \"rx_mm_fom\": %u\n", data->a_rx[i].rx_mm_fom);
-        fprintf(file, "        }%s\n", (i < 15) ? "," : "");
+        fprintf(file, "        }%s\n", (i < KB900X_NUM_LANES - 1) ? "," : "");
     }
     fprintf(file, "    ],\n");
 
     // Write b_rx array
     fprintf(file, "    \"b_rx\": [\n");
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < KB900X_NUM_LANES; i++) {
         fprintf(file, "        {\n");
         fprintf(file, "            \"rx_att\": %u,\n", data->b_rx[i].rx_att);
         fprintf(file, "            \"rx_ctle\": %u,\n", data->b_rx[i].rx_ctle);
@@ -1922,7 +2016,7 @@ int kb900x_log_phy_info(const kb900x_phy_info_t *data, const char *filename)
         fprintf(file, "            \"tx_asic_in_2\": %u,\n", data->b_rx[i].tx_asic_in_2);
         fprintf(file, "            \"rx_startup_fom\": %u,\n", data->b_rx[i].rx_startup_fom);
         fprintf(file, "            \"rx_mm_fom\": %u\n", data->b_rx[i].rx_mm_fom);
-        fprintf(file, "        }%s\n", (i < 15) ? "," : "");
+        fprintf(file, "        }%s\n", (i < KB900X_NUM_LANES - 1) ? "," : "");
     }
     fprintf(file, "    ]\n");
 

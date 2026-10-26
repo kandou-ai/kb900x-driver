@@ -16,6 +16,18 @@ example_vendor_id_exe = executable('example_vendor_id',
     include_directories: inc,
     link_with: smbus_sh_lib)
 
+example_max_temperature_exe = executable('example_max_temperature',
+    sources: ['max_temperature.c'],
+    include_directories: inc,
+    link_with: smbus_sh_lib,
+    dependencies: [bic_dep])
+
+example_link_health_status = executable('example_link_health_status',
+    sources: ['link_health_status.c'],
+    include_directories: inc,
+    link_with: smbus_sh_lib,
+    dependencies: [bic_dep])
+
 example_retimer_reset_exe = executable('example_retimer_reset',
     sources: ['retimer_reset.c'],
     include_directories: inc,

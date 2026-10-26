@@ -72,7 +72,7 @@ int main(void)
     CHECK_SUCCESS_MSG(ret, "Failed to open I2C interface.");
     KANDOU_INFO("I2C handle = %d", config.handle);
 
-    // Switch to SMBUS mode (required to various debug info)
+    // Switch to SMBUS mode (required for PHY info)
     KANDOU_INFO("Switching to SMBUS mode...");
     ret = kb900x_switch_communication_mode(&config, KB900X_COMM_SMBUS);
     if (ret != KB900X_E_OK) {
